@@ -1,6 +1,17 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <iostream>
+float vertices[] = {
+    0.5f,  0.5f,  0.0f, // top right
+    0.5f,  -0.5f, 0.0f, // bottom right
+    -0.5f, -0.5f, 0.0f, // bottom left
+    -0.5f, 0.5f,  0.0f  // top left
+};
+unsigned int indices[] = {
+    // note that we start from 0!
+    0, 1, 3, // first triangle
+    1, 2, 3  // second triangle
+};
 const char *vertexShaderSource =
     "#version 330 core\n"
     "layout (location = 0) in vec3 aPos;\n"
@@ -12,7 +23,7 @@ const char *fragmentShaderSource = "#version 330 core\n"
                                    "out vec4 FragColor;\n"
                                    "void main()\n"
                                    "{\n"
-                                   "FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
+                                   "FragColor = vec4(1.0f, 0.7f, 0.8f, 1.0f);\n"
                                    "}\n";
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
@@ -43,7 +54,7 @@ int main() {
   }
   glViewport(0, 0, 800, 600);
   glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-  float vertices[] = {-0.5f, -0.5f, 0.0f, 0.5f, -0.5f, 0.0f, 0.0f, 0.5f, 0.0f};
+  // float vertices[] = {-0.5f, -0.5f, 0.0f, 0.5f, -0.5f, 0.0f, 0.0f, 0.5f, 0.0f};
 
   // VERTEX ARRAY OBJECT
   unsigned int VAO;
@@ -92,6 +103,14 @@ int main() {
 
   glDeleteShader(vertexShader);
   glDeleteShader(fragmentShader);
+
+  //ELEMENT BUFFER OBJECT
+  unsigned int EBO;
+  glGenBuffers(1, &EBO);
+   
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
   // LINKING VERTEX ATTRIBUTES
   //  1. then set the vertex attributes pointers
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
@@ -103,11 +122,12 @@ int main() {
     // rendering commands here
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
-  // 2. use our shader program when we want to render an object
+    // 2. use our shader program when we want to render an object
     glUseProgram(shaderProgram);
     glBindVertexArray(VAO);
-  // 3.now draw the object
-    glDrawArrays(GL_TRIANGLES, 0, 3);
+    // 3.now draw the object
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    // glDrawArrays(GL_TRIANGLES, 0, 3);
     // check and call the events and swap the buffers
     glfwSwapBuffers(window); // concept of double buffers (section: 4.3)
     glfwPollEvents();
