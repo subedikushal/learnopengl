@@ -3,6 +3,9 @@
 #include <GL/glext.h>
 #include <GLFW/glfw3.h>
 #include <glad/glad.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <iostream>
 #include <math.h>
 #define STB_IMAGE_IMPLEMENTATION
@@ -29,7 +32,7 @@ void processInput(GLFWwindow *window) {
                   // 'GLFW_PRESS'
     glfwSetWindowShouldClose(window, true);
 }
-void gen_texture(unsigned int *texture, const char *path, const char* type) {
+void gen_texture(unsigned int *texture, const char *path, const char *type) {
   glGenTextures(1, texture);
   glBindTexture(GL_TEXTURE_2D, *texture);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -40,7 +43,7 @@ void gen_texture(unsigned int *texture, const char *path, const char* type) {
   int width, height, nrChannels;
   unsigned char *data = stbi_load(path, &width, &height, &nrChannels, 0);
   if (data) {
-    if (strcmp(type,"png") == 0) {
+    if (strcmp(type, "png") == 0) {
       glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA,
                    GL_UNSIGNED_BYTE, data);
     } else {
@@ -120,12 +123,20 @@ int main() {
   ourShader.setInt("texture1", 0);
   ourShader.setInt("texture2", 1); // or with shader class
   // main loop where the rendering happens
+  glm::mat4 trans = glm::mat4(1.0f);
+  unsigned int transformLoc = glGetUniformLocation(ourShader.ID, "transform");
   while (!glfwWindowShouldClose(window)) {
     // input
     processInput(window);
     // rendering commands here
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
+    float timeValue = glfwGetTime();
+    float rotValue = sin(timeValue) / 2.0f + 2.0;
+    trans =
+        glm::rotate(trans, glm::radians(rotValue), glm::vec3(0.0, 0.0, 1.0));
+    // trans = glm::scale(trans, glm::vec3(0.5, 0.5, 0.5));
+    glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
     // 2. use our shader program when we want to render an object
     // ourShader.use();
     // ourShader.setFloat("offset", 0.3);
