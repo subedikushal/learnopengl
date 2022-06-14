@@ -1,19 +1,18 @@
 #include "../include/shader.h"
+#include <GL/gl.h>
+#include <GL/glext.h>
 #include <GLFW/glfw3.h>
 #include <glad/glad.h>
 #include <iostream>
 #include <math.h>
-// float vertices[] = {
-//     0.5f,  0.5f,  0.0f, // top right
-//     0.5f,  -0.5f, 0.0f, // bottom right
-//     -0.5f, -0.5f, 0.0f, // bottom left
-//     -0.5f, 0.5f,  0.0f  // top left
-// };
+#define STB_IMAGE_IMPLEMENTATION
+#include "../include/stb_image.h"
 float vertices[] = {
-    // positions       // colors
-    0.5f,  -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, // bottom right
-    -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, // bottom left
-    0.0f,  0.5f,  0.0f, 0.0f, 0.0f, 1.0f  // top
+    // positions      // colors         // texture coords
+    0.5f,  0.5f,  0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, // top right
+    0.5f,  -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, // bottom right
+    -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, // bottom left
+    -0.5f, 0.5f,  0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f  // top left
 };
 unsigned int indices[] = {
     // note that we start from 0!
@@ -29,6 +28,31 @@ void processInput(GLFWwindow *window) {
       GLFW_PRESS) // if not pressed glfwGetKey returns 'GLFW_RELEASE' instead of
                   // 'GLFW_PRESS'
     glfwSetWindowShouldClose(window, true);
+}
+void gen_texture(unsigned int *texture, const char *path, const char* type) {
+  glGenTextures(1, texture);
+  glBindTexture(GL_TEXTURE_2D, *texture);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  // load and generate the texture
+  int width, height, nrChannels;
+  unsigned char *data = stbi_load(path, &width, &height, &nrChannels, 0);
+  if (data) {
+    if (strcmp(type,"png") == 0) {
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA,
+                   GL_UNSIGNED_BYTE, data);
+    } else {
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB,
+                   GL_UNSIGNED_BYTE, data);
+    }
+    glGenerateMipmap(GL_TEXTURE_2D);
+    std::cout << "texture loaded" << std::endl;
+  } else {
+    std::cout << "failed to load texture" << std::endl;
+  }
+  stbi_image_free(data);
 }
 int main() {
   glfwInit();
@@ -69,15 +93,32 @@ int main() {
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices,
                GL_STATIC_DRAW);
 
+  // Texutre
+
+  stbi_set_flip_vertically_on_load(true);
+  unsigned int texture2;
+  gen_texture(&texture2, "images/awesomeface.png", "png");
+  unsigned int texture1;
+  gen_texture(&texture1, "images/container.jpg", "jpg");
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, texture1);
+  glActiveTexture(GL_TEXTURE1);
+  glBindTexture(GL_TEXTURE_2D, texture2);
   // LINKING VERTEX ATTRIBUTES
   //  1. then set the vertex attributes pointers
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *)0);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)0);
   glEnableVertexAttribArray(0);
-  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float),
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float),
                         (void *)(3 * sizeof(float)));
   glEnableVertexAttribArray(1);
+  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float),
+                        (void *)(6 * sizeof(float)));
+  glEnableVertexAttribArray(2);
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
   Shader ourShader("shaders/vshader.vs", "shaders/fshader.fs");
+  ourShader.use();
+  ourShader.setInt("texture1", 0);
+  ourShader.setInt("texture2", 1); // or with shader class
   // main loop where the rendering happens
   while (!glfwWindowShouldClose(window)) {
     // input
@@ -86,11 +127,12 @@ int main() {
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
     // 2. use our shader program when we want to render an object
-    ourShader.use();
-    glBindVertexArray(VAO);
+    // ourShader.use();
+    // ourShader.setFloat("offset", 0.3);
     // 3.now draw the object
-    // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-    glDrawArrays(GL_TRIANGLES, 0, 3);
+    glBindVertexArray(VAO);
+    // glDrawArrays(GL_TRIANGLES, 0, 3);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
     // check and call the events and swap the buffers
     glfwSwapBuffers(window); // concept of double buffers (section: 4.3)
     glfwPollEvents();

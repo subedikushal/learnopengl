@@ -8,16 +8,13 @@ Shader::Shader(const char *vertexPath, const char *fragmentPath) {
   std::string fragmentCode;
   std::ifstream vShaderFile;
   std::ifstream fShaderFile;
-  std::cout << "defined datas" << std::endl;
   // ensure ifstream objects can throw exceptions
-  // vShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-  // fShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-  std::cout << "after exceptions" << std::endl;
+  vShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+  fShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
   try {
     // open files
     vShaderFile.open((vertexPath));
     fShaderFile.open((fragmentPath));
-    std::cout << "opened files" << std::endl;
     std::stringstream vShaderStream, fShaderStream;
     // read file’s buffer contents into streams
     vShaderStream << vShaderFile.rdbuf();
@@ -25,11 +22,9 @@ Shader::Shader(const char *vertexPath, const char *fragmentPath) {
     // close file handlers
     vShaderFile.close();
     fShaderFile.close();
-    std::cout << "closing the files" << std::endl;
     // convert stream into string
     vertexCode = vShaderStream.str();
     fragmentCode = fShaderStream.str();
-    std::cout <<"length: "<< vertexCode.length() << std::endl;
   } catch (std::ifstream::failure &e) {
     std::cout << "ERROR::SHADER::FILE_NOT_SUCCESFULLY_READ" << e.what()
               << std::endl;
