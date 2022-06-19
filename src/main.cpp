@@ -161,17 +161,10 @@ int main() {
     glBindVertexArray(VAO);
     for (int i = 0; i < 10; i++) {
       float k = i * 0.1;
-
-      glm::vec3 pos = cubePositions[i];
-      // pos.x = pos.x * (float)(sin(glfwGetTime()));
-      pos.z = -5 - pos.z;
       three_d->set_model((glfwGetTime()) * 180 + i,
                          glm::vec3(k + 2 * i, k + 3 * i, k + 4 * i),
                          cubePositions[i]);
-      three_d->set_view(pos);
       glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(three_d->model));
-      // glUniformMatrix4fv(viewLoc, 1, GL_FALSE,
-      // glm::value_ptr(three_d->view));
       three_d->set_projection(fov);
       glUniformMatrix4fv(projectionLoc, 1, GL_FALSE,
                          glm::value_ptr(three_d->projection));
