@@ -11,6 +11,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "../include/3d.h"
 #include "../include/stb_image.h"
+#include <vector>
 
 glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 6.0f);
 glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
@@ -22,6 +23,64 @@ float lastX = 800.0f / 2.0;
 float lastY = 600.0 / 2.0;
 float fov = 45.0f;
 float zoom = 0.0f;
+// sphere
+int sectorCount{36}, stackCount{18};
+std::vector<float> gen_sphere_vertices() {
+  std::vector<float> vertices;
+  float x, y, z, xy, radius{1.0f}; // vertex position
+  float s, t;                      // vertex texCoord
+  float sectorStep = 2 * M_PI / sectorCount;
+  float stackStep = M_PI / stackCount;
+  float sectorAngle, stackAngle;
+  for (int i = 0; i <= stackCount; ++i) {
+    stackAngle = M_PI / 2 - i * stackStep; // starting from pi/2 to -pi/2
+    xy = radius * cosf(stackAngle);        // r * cos(u)
+    z = radius * sinf(stackAngle);         // r * sin(u)
+    // add (sectorCount+1) vertices per stack
+    // the first and last vertices have same position and normal, but different
+    // tex coords
+    for (int j = 0; j <= sectorCount; ++j) {
+      sectorAngle = j * sectorStep; // starting from 0 to 2pi
+      // vertex position (x, y, z)
+      x = xy * cosf(sectorAngle); // r * cos(u) * cos(v)
+      y = xy * sinf(sectorAngle); // r * cos(u) * sin(v)
+      vertices.push_back(x);
+      vertices.push_back(y);
+      vertices.push_back(z);
+      s = (float)j / sectorCount;
+      t = (float)i / stackCount;
+      vertices.push_back(s);
+      vertices.push_back(t);
+    }
+  }
+  return vertices;
+}
+std::vector<unsigned int> gen_sphere_indices() {
+  std::vector<unsigned int> indices;
+  int k1, k2;
+  for (int i = 0; i < stackCount; ++i) {
+    k1 = i * (sectorCount + 1); // beginning of current stack
+    k2 = k1 + sectorCount + 1;  // beginning of next stack
+
+    for (int j = 0; j < sectorCount; ++j, ++k1, ++k2) {
+      // 2 triangles per sector excluding first and last stacks
+      // k1 => k2 => k1+1
+      if (i != 0) {
+        indices.push_back(k1);
+        indices.push_back(k2);
+        indices.push_back(k1 + 1);
+      }
+
+      // k1+1 => k2 => k2+1
+      if (i != (stackCount - 1)) {
+        indices.push_back(k1 + 1);
+        indices.push_back(k2);
+        indices.push_back(k2 + 1);
+      }
+    }
+  }
+  return indices;
+}
 // function prototypes
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 void scroll_callback(GLFWwindow *window, double xoffset, double yoffset);
@@ -46,52 +105,10 @@ int main() {
     return -1;
   }
   glViewport(0, 0, 800, 600);
-  unsigned int indices[] = {
-      // note that we start from 0!
-      0, 1, 3, // first triangle
-      1, 2, 3  // second triangle
-  };
-  float pyramid_vertices[] = {
-      -1.0f, 0.0f, 1.0f,  0.0f, 0.0f, 1.0f,  0.0f, 1.0f,  1.0f, 0.0f,
-      0.0f,  0.0f, -1.0f, 1.0f, 1.0f, -1.0f, 0.0f, 1.0f,  0.0f, 0.0f,
-      1.0f,  0.0f, 1.0f,  0.0f, 1.0f, 0.0f,  1.0f, 0.0f,  1.0f, 1.0f,
-      -1.0f, 0.0f, 1.0f,  0.0f, 0.0f, 0.0f,  0.0f, -1.0f, 0.0f, 1.0f,
-      0.0f,  1.0f, 0.0f,  1.0f, 1.0f, 1.0f,  0.0f, 1.0f,  0.0f, 0.0f,
-      0.0f,  0.0f, -1.0f, 0.0f, 1.0f, 0.0f,  1.0f, 0.0f,  1.0f, 1.0f,
-  };
-  // float square_vertices[] = {
-  //     -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 0.5f,  -0.5f, -0.5f, 1.0f, 0.0f,
-  //     0.5f,  0.5f,  -0.5f, 1.0f, 1.0f, 0.5f,  0.5f,  -0.5f, 1.0f, 1.0f,
-  //     -0.5f, 0.5f,  -0.5f, 0.0f, 1.0f, -0.5f, -0.5f, -0.5f, 0.0f, 0.0f,
-  //
-  //     -0.5f, -0.5f, 0.5f,  0.0f, 0.0f, 0.5f,  -0.5f, 0.5f,  1.0f, 0.0f,
-  //     0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-  //     -0.5f, 0.5f,  0.5f,  0.0f, 1.0f, -0.5f, -0.5f, 0.5f,  0.0f, 0.0f,
-  //
-  //     -0.5f, 0.5f,  0.5f,  1.0f, 0.0f, -0.5f, 0.5f,  -0.5f, 1.0f, 1.0f,
-  //     -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, -0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
-  //     -0.5f, -0.5f, 0.5f,  0.0f, 0.0f, -0.5f, 0.5f,  0.5f,  1.0f, 0.0f,
-  //
-  //     0.5f,  0.5f,  0.5f,  1.0f, 0.0f, 0.5f,  0.5f,  -0.5f, 1.0f, 1.0f,
-  //     0.5f,  -0.5f, -0.5f, 0.0f, 1.0f, 0.5f,  -0.5f, -0.5f, 0.0f, 1.0f,
-  //     0.5f,  -0.5f, 0.5f,  0.0f, 0.0f, 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-  //
-  //     -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 0.5f,  -0.5f, -0.5f, 1.0f, 1.0f,
-  //     0.5f,  -0.5f, 0.5f,  1.0f, 0.0f, 0.5f,  -0.5f, 0.5f,  1.0f, 0.0f,
-  //     -0.5f, -0.5f, 0.5f,  0.0f, 0.0f, -0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
-  //
-  //     -0.5f, 0.5f,  -0.5f, 0.0f, 1.0f, 0.5f,  0.5f,  -0.5f, 1.0f, 1.0f,
-  //     0.5f,  0.5f,  0.5f,  1.0f, 0.0f, 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-  //     -0.5f, 0.5f,  0.5f,  0.0f, 0.0f, -0.5f, 0.5f,  -0.5f, 0.0f, 1.0f};
-  // glm::vec3 cubePositions[] = {
-  //     glm::vec3(0.0f, 0.0f, -1.0f),   glm::vec3(2.0f, 5.0f, -15.0f),
-  //     glm::vec3(-1.5f, -2.2f, -2.5f), glm::vec3(-3.8f, -2.0f, -12.3f),
-  //     glm::vec3(2.4f, -0.4f, -3.5f),  glm::vec3(-1.7f, 3.0f, -7.5f),
-  //     glm::vec3(1.3f, -2.0f, -2.5f),  glm::vec3(1.5f, 2.0f, -2.5f),
-  //     glm::vec3(1.5f, 0.2f, 0.0f),    glm::vec3(-1.3f, 1.0f, -1.5f)};
+
+  std::vector<float> vertices = gen_sphere_vertices();
+  std::vector<unsigned int> indices = gen_sphere_indices();
   glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-  // glfwSetCursorPosCallback(window, mouse_callback);
-  // glfwSetScrollCallback(window, scroll_callback);
   glEnable(GL_DEPTH_TEST);
   // VERTEX ARRAY OBJECT
   unsigned int VAO;
@@ -103,22 +120,23 @@ int main() {
   glGenBuffers(1, &VBO);
   // 0. copy our vertices array in a buffer for OpenGl to use
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(pyramid_vertices), pyramid_vertices, GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), (const void *)&vertices,
+               GL_STATIC_DRAW);
 
   // ELEMENT BUFFER OBJECT
   unsigned int EBO;
   glGenBuffers(1, &EBO);
 
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices,
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), (const void *)&indices,
                GL_STATIC_DRAW);
 
   // Texutre
   stbi_set_flip_vertically_on_load(true);
-  unsigned int texture2;
-  gen_texture(&texture2, "images/awesomeface.png", "png");
   unsigned int texture1;
   gen_texture(&texture1, "images/container.jpg", "jpg");
+  unsigned int texture2;
+  gen_texture(&texture2, "images/awesomeface.png", "png");
 
   // LINKING VERTEX ATTRIBUTES
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)0);
@@ -133,13 +151,6 @@ int main() {
   ourShader.setInt("texture1", 0);
   ourShader.setInt("texture2", 1); // or with shader class
 
-  Three_d *three_d =
-      new Three_d(sin(glfwGetTime()) * 20, glm::vec3(0.3f, 0.5f, 1.0f),
-                  glm::vec3(0.0f, 0.0f, -2.0f));
-
-  // mouse cursor visible or not
-  // glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-  // main loop where the rendering happens
   while (!glfwWindowShouldClose(window)) {
     // input
     processInput(window);
@@ -156,35 +167,8 @@ int main() {
     // activate shader
     ourShader.use();
 
-    // transformations
-    int modelLoc = glGetUniformLocation(ourShader.ID, "model");
-    int viewLoc = glGetUniformLocation(ourShader.ID, "view");
-    int projectionLoc = glGetUniformLocation(ourShader.ID, "projection");
-    glm::mat4 view = glm::mat4(
-        1.0f); // make sure to initialize matrix to identity matrix first
-    view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
-    glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-    // 3.now draw the objectconst float radius = 10.0f;
-
-      three_d->set_model((glfwGetTime()) * 180,
-                         glm::vec3( 0.5f , 0.6f ,-0.3f),
-                         glm::vec3(0.9f , 1.8f, -1.0f));
-      glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(three_d->model));
-      three_d->set_projection(fov);
-      glUniformMatrix4fv(projectionLoc, 1, GL_FALSE,
-                         glm::value_ptr(three_d->projection));
     glBindVertexArray(VAO);
-    glDrawArrays(GL_TRIANGLES, 0, 12);
-  //   for (int i = 0; i < 10; i++) {
-  //     float k = i * 0.1;
-  //     three_d->set_model((glfwGetTime()) * 180 + i,
-  //                        glm::vec3(k + 2 * i, k + 3 * i, k + 4 * i),
-  //                        cubePositions[i]);
-  //     glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(three_d->model));
-  //     three_d->set_projection(fov);
-  //     glUniformMatrix4fv(projectionLoc, 1, GL_FALSE,
-  //                        glm::value_ptr(three_d->projection));
-  //   }
+    glDrawElements(GL_TRIANGLES, sizeof(indices), GL_UNSIGNED_INT, 0);
     glfwSwapBuffers(window); // concept of double buffers (section: 4.3)
     glfwPollEvents();
   }
@@ -211,17 +195,18 @@ void processInput(GLFWwindow *window) {
         glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
 
   if (glfwGetKey(window, GLFW_KEY_ESCAPE) ==
-      GLFW_PRESS) // if not pressed glfwGetKey returns 'GLFW_RELEASE' instead of
+      GLFW_PRESS) // if not pressed glfwGetKey returns 'GLFW_RELEASE' instead
+                  // of
     // 'GLFW_PRESS'
     glfwSetWindowShouldClose(window, true);
 }
 void gen_texture(unsigned int *texture, const char *path, const char *type) {
   glGenTextures(1, texture);
   glBindTexture(GL_TEXTURE_2D, *texture);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,GL_REPEAT );
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   // load and generate the texture
   int width, height, nrChannels;
   unsigned char *data = stbi_load(path, &width, &height, &nrChannels, 0);
