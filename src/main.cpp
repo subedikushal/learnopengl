@@ -106,8 +106,8 @@ int main() {
   }
   glViewport(0, 0, 800, 600);
 
-  std::vector<float> vertices = gen_sphere_vertices();
-  std::vector<unsigned int> indices = gen_sphere_indices();
+  const std::vector<float> vertices = gen_sphere_vertices();
+  const std::vector<unsigned int> indices = gen_sphere_indices();
   glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
   glEnable(GL_DEPTH_TEST);
   // VERTEX ARRAY OBJECT
@@ -115,22 +115,25 @@ int main() {
   glGenVertexArrays(1, &VAO);
   glBindVertexArray(VAO);
 
+  std::cout<<"after vao"<<std::endl;
   // VERTEX BUFFER OBJECT
   unsigned int VBO;
   glGenBuffers(1, &VBO);
   // 0. copy our vertices array in a buffer for OpenGl to use
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), (const void *)&vertices,
-               GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float),
+               (void *)&vertices[0], GL_STATIC_DRAW);
 
+  std::cout<<"vertex buffer binded"<<std::endl;
   // ELEMENT BUFFER OBJECT
   unsigned int EBO;
   glGenBuffers(1, &EBO);
 
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), (const void *)&indices,
-               GL_STATIC_DRAW);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int),
+               (void *)&indices[0], GL_STATIC_DRAW);
 
+  std::cout<<"element buffer binded"<<std::endl;
   // Texutre
   stbi_set_flip_vertically_on_load(true);
   unsigned int texture1;
@@ -149,8 +152,9 @@ int main() {
   Shader ourShader("shaders/vshader.vs", "shaders/fshader.fs");
   ourShader.use();
   ourShader.setInt("texture1", 0);
-  ourShader.setInt("texture2", 1); // or with shader class
+  ourShader.setInt("texture2", 1);
 
+  std::cout<<indices.size()<<std::endl;
   while (!glfwWindowShouldClose(window)) {
     // input
     processInput(window);
@@ -158,22 +162,23 @@ int main() {
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    // activate shader
+    ourShader.use();
+
     // bind textures on corresponding texture units
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture1);
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, texture2);
 
-    // activate shader
-    ourShader.use();
-
     glBindVertexArray(VAO);
-    glDrawElements(GL_TRIANGLES, sizeof(indices), GL_UNSIGNED_INT, 0);
+    
+    glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
     glfwSwapBuffers(window); // concept of double buffers (section: 4.3)
     glfwPollEvents();
   }
-  glDeleteVertexArrays(1, &VAO);
-  glDeleteBuffers(1, &VBO);
+  // glDeleteVertexArrays(1, &VAO);
+  // glDeleteBuffers(1, &VBO);
   glfwTerminate();
   return 0;
 }
@@ -204,7 +209,7 @@ void gen_texture(unsigned int *texture, const char *path, const char *type) {
   glGenTextures(1, texture);
   glBindTexture(GL_TEXTURE_2D, *texture);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,GL_REPEAT );
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   // load and generate the texture
