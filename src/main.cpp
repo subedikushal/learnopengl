@@ -118,69 +118,50 @@ int main()
     glViewport(0, 0, 800, 600);
 
     float square_vertices[] = {
-        -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 0.5f,  -0.5f, -0.5f, 1.0f, 0.0f,
-        0.5f,  0.5f,  -0.5f, 1.0f, 1.0f, 0.5f,  0.5f,  -0.5f, 1.0f, 1.0f,
-        -0.5f, 0.5f,  -0.5f, 0.0f, 1.0f, -0.5f, -0.5f, -0.5f, 0.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f, 0.5f,  -0.5f, -0.5f, 0.5f,  0.5f,  -0.5f,
+        0.5f,  0.5f,  -0.5f, -0.5f, 0.5f,  -0.5f, -0.5f, -0.5f, -0.5f,
 
-        -0.5f, -0.5f, 0.5f,  0.0f, 0.0f, 0.5f,  -0.5f, 0.5f,  1.0f, 0.0f,
-        0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-        -0.5f, 0.5f,  0.5f,  0.0f, 1.0f, -0.5f, -0.5f, 0.5f,  0.0f, 0.0f,
+        -0.5f, -0.5f, 0.5f,  0.5f,  -0.5f, 0.5f,  0.5f,  0.5f,  0.5f,
+        0.5f,  0.5f,  0.5f,  -0.5f, 0.5f,  0.5f,  -0.5f, -0.5f, 0.5f,
 
-        -0.5f, 0.5f,  0.5f,  1.0f, 0.0f, -0.5f, 0.5f,  -0.5f, 1.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, -0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
-        -0.5f, -0.5f, 0.5f,  0.0f, 0.0f, -0.5f, 0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f, 0.5f,  0.5f,  -0.5f, 0.5f,  -0.5f, -0.5f, -0.5f, -0.5f,
+        -0.5f, -0.5f, -0.5f, -0.5f, -0.5f, 0.5f,  -0.5f, 0.5f,  0.5f,
 
-        0.5f,  0.5f,  0.5f,  1.0f, 0.0f, 0.5f,  0.5f,  -0.5f, 1.0f, 1.0f,
-        0.5f,  -0.5f, -0.5f, 0.0f, 1.0f, 0.5f,  -0.5f, -0.5f, 0.0f, 1.0f,
-        0.5f,  -0.5f, 0.5f,  0.0f, 0.0f, 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        0.5f,  0.5f,  0.5f,  0.5f,  0.5f,  -0.5f, 0.5f,  -0.5f, -0.5f,
+        0.5f,  -0.5f, -0.5f, 0.5f,  -0.5f, 0.5f,  0.5f,  0.5f,  0.5f,
 
-        -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 0.5f,  -0.5f, -0.5f, 1.0f, 1.0f,
-        0.5f,  -0.5f, 0.5f,  1.0f, 0.0f, 0.5f,  -0.5f, 0.5f,  1.0f, 0.0f,
-        -0.5f, -0.5f, 0.5f,  0.0f, 0.0f, -0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f, 0.5f,  -0.5f, -0.5f, 0.5f,  -0.5f, 0.5f,
+        0.5f,  -0.5f, 0.5f,  -0.5f, -0.5f, 0.5f,  -0.5f, -0.5f, -0.5f,
 
-        -0.5f, 0.5f,  -0.5f, 0.0f, 1.0f, 0.5f,  0.5f,  -0.5f, 1.0f, 1.0f,
-        0.5f,  0.5f,  0.5f,  1.0f, 0.0f, 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-        -0.5f, 0.5f,  0.5f,  0.0f, 0.0f, -0.5f, 0.5f,  -0.5f, 0.0f, 1.0f};
+        -0.5f, 0.5f,  -0.5f, 0.5f,  0.5f,  -0.5f, 0.5f,  0.5f,  0.5f,
+        0.5f,  0.5f,  0.5f,  -0.5f, 0.5f,  0.5f,  -0.5f, 0.5f,  -0.5f,
+    };
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glEnable(GL_DEPTH_TEST);
     // VERTEX ARRAY OBJECT
-    unsigned int VAO, lightVAO;
+    unsigned int VAO;
     glGenVertexArrays(1, &VAO);
     glBindVertexArray(VAO);
 
-    glGenVertexArrays(1, &lightVAO);
-    glBindVertexArray(lightVAO);
 
     // VERTEX BUFFER OBJECT
     unsigned int VBO;
     glGenBuffers(1, &VBO);
     // 0. copy our vertices array in a buffer for OpenGl to use
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(square_vertices),
-                 (void*)square_vertices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(square_vertices), square_vertices,
+                 GL_STATIC_DRAW);
 
-    std::cout << "vertex buffer binded" << std::endl;
     // LINKING VERTEX ATTRIBUTES
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float),
                           (void*)0);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
-                          (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
 
     // initialize shaders
     Shader ourShader("shaders/vshader.vs", "shaders/fshader.fs");
-    ourShader.use();
-    ourShader.setVec3("objectColor", 1.0f, 0.5f, 0.31f);
-    ourShader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
 
-    Shader lightingShader("shaders/lightSource_vshader.vs",
-                          "shaders/lightSource_fshader.fs");
-
-    Three_d* three_d = new Three_d(20.0f, glm::vec3(0.0f, 0.0f, 1.0f),
+    Three_d* three_d = new Three_d(glfwGetTime()*20.0f, glm::vec3(0.0f, 0.0f, 1.0f),
                                    glm::vec3(0.0f, 0.0f, -0.1f));
-    // Three_d* lightSource_3d = new Three_d(20.0f, glm::vec3(0.0f, 0.0f, 1.0f),
-    //                                glm::vec3(1.2f, 1.0f, 2.0f));
     while (!glfwWindowShouldClose(window))
     {
         // input
@@ -192,41 +173,33 @@ int main()
         // activate shader
         ourShader.use();
 
-        int modelLoc = glGetUniformLocation(ourShader.ID, "model");
-        int viewLoc = glGetUniformLocation(ourShader.ID, "view");
+        ourShader.setVec3("objectColor", 1.0f, 0.5f, 0.31f);
+        ourShader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
+        // transformations
+        // setting projection uniform
         int projectionLoc = glGetUniformLocation(ourShader.ID, "projection");
+        three_d->set_projection(fov);
+        glUniformMatrix4fv(projectionLoc, 1, GL_FALSE,
+                           glm::value_ptr(three_d->projection));
+
+        // setting view uniform
+        int viewLoc = glGetUniformLocation(ourShader.ID, "view");
         glm::mat4 view = glm::mat4(
             1.0f); // make sure to initialize matrix to identity matrix first
         view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 
-        three_d->set_model(20, glm::vec3(0.0f, 1.0f, 0.0f),
-                           glm::vec3(0.0f, 0.0f, -2.0f));
+        // setting model uniform
+        int modelLoc = glGetUniformLocation(ourShader.ID, "model");
+        three_d->set_model(20, glm::vec3(0.0f, 0.0f, 0.0f),
+                           glm::vec3(1.0f, 1.0f, -0.8f));
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE,
                            glm::value_ptr(three_d->model));
-        three_d->set_projection(fov);
-        glUniformMatrix4fv(projectionLoc, 1, GL_FALSE,
-                           glm::value_ptr(three_d->projection));
 
+        // binding vao and drawing
         glBindVertexArray(VAO);
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
-        // lightingShader.use();
-        // int lightModelLoc = glGetUniformLocation(lightingShader.ID, "model");
-        // int lightViewLoc = glGetUniformLocation(lightingShader.ID, "view");
-        // int lightProjectionLoc = glGetUniformLocation(lightingShader.ID,
-        // "projection"); glUniformMatrix4fv(lightViewLoc, 1, GL_FALSE,
-        // glm::value_ptr(view)); lightSource_3d->set_model(20,
-        // glm::vec3(0.0f, 1.0f, 0.0f),
-        //                    glm::vec3(1.2f, 1.0f, 2.0f));
-        // glUniformMatrix4fv(lightModelLoc, 1, GL_FALSE,
-        //                    glm::value_ptr(lightSource_3d->model));
-        //
-        // lightSource_3d->set_projection(fov);
-        // glUniformMatrix4fv(lightProjectionLoc, 1, GL_FALSE,
-        //                    glm::value_ptr(lightSource_3d->projection));
-        // glBindVertexArray(lightVAO);
-        // glDrawArrays(GL_TRIANGLES, 0, 36);
         glfwSwapBuffers(window); // concept of double buffers (section: 4.3)
         glfwPollEvents();
     }
