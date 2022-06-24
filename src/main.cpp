@@ -161,7 +161,19 @@ int main()
     glBufferData(GL_ARRAY_BUFFER, sizeof(square_vertices),
                  (void*)square_vertices, GL_STATIC_DRAW);
 
+<<<<<<< Updated upstream
 
+=======
+    std::cout << "vertex buffer binded" << std::endl;
+    // ELEMENT BUFFER OBJECT
+    unsigned int EBO;
+    glGenBuffers(1, &EBO);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int),
+                 (void*)&indices[0], GL_STATIC_DRAW);
+
+    std::cout << "element buffer binded" << std::endl;
     // LINKING VERTEX ATTRIBUTES
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
                           (void*)0);
@@ -176,8 +188,8 @@ int main()
     ourShader.setVec3("objectColor", 1.0f, 0.5f, 0.31f);
     ourShader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
 
-    Shader lightingShader("shaders/lightSource_vshader.vs", "shaders/lightSource_fshader.fs");
-
+    Shader lightingShader("shaders/lightSource_vshader.vs",
+                          "shaders/lightSource_fshader.fs");
 
     Three_d* three_d = new Three_d(20.0f, glm::vec3(0.0f, 0.0f, 1.0f),
                                    glm::vec3(0.0f, 0.0f, -0.1f));
@@ -209,15 +221,17 @@ int main()
         three_d->set_projection(fov);
         glUniformMatrix4fv(projectionLoc, 1, GL_FALSE,
                            glm::value_ptr(three_d->projection));
+
         glBindVertexArray(VAO);
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
         // lightingShader.use();
         // int lightModelLoc = glGetUniformLocation(lightingShader.ID, "model");
         // int lightViewLoc = glGetUniformLocation(lightingShader.ID, "view");
-        // int lightProjectionLoc = glGetUniformLocation(lightingShader.ID, "projection");
-        // glUniformMatrix4fv(lightViewLoc, 1, GL_FALSE, glm::value_ptr(view));
-        // lightSource_3d->set_model(20, glm::vec3(0.0f, 1.0f, 0.0f),
+        // int lightProjectionLoc = glGetUniformLocation(lightingShader.ID,
+        // "projection"); glUniformMatrix4fv(lightViewLoc, 1, GL_FALSE,
+        // glm::value_ptr(view)); lightSource_3d->set_model(20,
+        // glm::vec3(0.0f, 1.0f, 0.0f),
         //                    glm::vec3(1.2f, 1.0f, 2.0f));
         // glUniformMatrix4fv(lightModelLoc, 1, GL_FALSE,
         //                    glm::value_ptr(lightSource_3d->model));
