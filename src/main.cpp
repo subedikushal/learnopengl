@@ -117,40 +117,50 @@ int main()
     }
     glViewport(0, 0, 800, 600);
 
-    const std::vector<float> vertices = gen_sphere_vertices();
-    const std::vector<unsigned int> indices = gen_sphere_indices();
+    float square_vertices[] = {
+        -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 0.5f,  -0.5f, -0.5f, 1.0f, 0.0f,
+        0.5f,  0.5f,  -0.5f, 1.0f, 1.0f, 0.5f,  0.5f,  -0.5f, 1.0f, 1.0f,
+        -0.5f, 0.5f,  -0.5f, 0.0f, 1.0f, -0.5f, -0.5f, -0.5f, 0.0f, 0.0f,
+
+        -0.5f, -0.5f, 0.5f,  0.0f, 0.0f, 0.5f,  -0.5f, 0.5f,  1.0f, 0.0f,
+        0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+        -0.5f, 0.5f,  0.5f,  0.0f, 1.0f, -0.5f, -0.5f, 0.5f,  0.0f, 0.0f,
+
+        -0.5f, 0.5f,  0.5f,  1.0f, 0.0f, -0.5f, 0.5f,  -0.5f, 1.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, -0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
+        -0.5f, -0.5f, 0.5f,  0.0f, 0.0f, -0.5f, 0.5f,  0.5f,  1.0f, 0.0f,
+
+        0.5f,  0.5f,  0.5f,  1.0f, 0.0f, 0.5f,  0.5f,  -0.5f, 1.0f, 1.0f,
+        0.5f,  -0.5f, -0.5f, 0.0f, 1.0f, 0.5f,  -0.5f, -0.5f, 0.0f, 1.0f,
+        0.5f,  -0.5f, 0.5f,  0.0f, 0.0f, 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+        -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 0.5f,  -0.5f, -0.5f, 1.0f, 1.0f,
+        0.5f,  -0.5f, 0.5f,  1.0f, 0.0f, 0.5f,  -0.5f, 0.5f,  1.0f, 0.0f,
+        -0.5f, -0.5f, 0.5f,  0.0f, 0.0f, -0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
+
+        -0.5f, 0.5f,  -0.5f, 0.0f, 1.0f, 0.5f,  0.5f,  -0.5f, 1.0f, 1.0f,
+        0.5f,  0.5f,  0.5f,  1.0f, 0.0f, 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f, 0.5f,  0.5f,  0.0f, 0.0f, -0.5f, 0.5f,  -0.5f, 0.0f, 1.0f};
+    // const std::vector<float> vertices = gen_sphere_vertices();
+    // const std::vector<unsigned int> indices = gen_sphere_indices();
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glEnable(GL_DEPTH_TEST);
     // VERTEX ARRAY OBJECT
-    unsigned int VAO;
+    unsigned int VAO, lightVAO;
     glGenVertexArrays(1, &VAO);
     glBindVertexArray(VAO);
 
-    std::cout << "after vao" << std::endl;
+    glGenVertexArrays(1, &lightVAO);
+    glBindVertexArray(lightVAO);
+
     // VERTEX BUFFER OBJECT
     unsigned int VBO;
     glGenBuffers(1, &VBO);
     // 0. copy our vertices array in a buffer for OpenGl to use
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float),
-                 (void*)&vertices[0], GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(square_vertices),
+                 (void*)square_vertices, GL_STATIC_DRAW);
 
-    std::cout << "vertex buffer binded" << std::endl;
-    // ELEMENT BUFFER OBJECT
-    unsigned int EBO;
-    glGenBuffers(1, &EBO);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int),
-                 (void*)&indices[0], GL_STATIC_DRAW);
-
-    std::cout << "element buffer binded" << std::endl;
-    // Texutre
-    stbi_set_flip_vertically_on_load(true);
-    unsigned int texture1;
-    gen_texture(&texture1, "images/container.jpg", "jpg");
-    unsigned int texture2;
-    gen_texture(&texture2, "images/awesomeface.png", "png");
 
     // LINKING VERTEX ATTRIBUTES
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
@@ -163,12 +173,16 @@ int main()
     // initialize shaders
     Shader ourShader("shaders/vshader.vs", "shaders/fshader.fs");
     ourShader.use();
-    ourShader.setInt("texture1", 0);
-    ourShader.setInt("texture2", 1);
+    ourShader.setVec3("objectColor", 1.0f, 0.5f, 0.31f);
+    ourShader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
 
-    std::cout << indices.size() << std::endl;
-    Three_d* three_d = new Three_d(-90.0f, glm::vec3(0.0f, 0.0f, 1.0f),
+    Shader lightingShader("shaders/lightSource_vshader.vs", "shaders/lightSource_fshader.fs");
+
+
+    Three_d* three_d = new Three_d(20.0f, glm::vec3(0.0f, 0.0f, 1.0f),
                                    glm::vec3(0.0f, 0.0f, -0.1f));
+    // Three_d* lightSource_3d = new Three_d(20.0f, glm::vec3(0.0f, 0.0f, 1.0f),
+    //                                glm::vec3(1.2f, 1.0f, 2.0f));
     while (!glfwWindowShouldClose(window))
     {
         // input
@@ -188,22 +202,31 @@ int main()
         view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 
-        three_d->set_model((glfwGetTime()) * 20, glm::vec3(0.0f, 1.0f, 0.0f),
-                           glm::vec3(0.0f, 0.0f, -0.1f));
+        three_d->set_model(20, glm::vec3(0.0f, 1.0f, 0.0f),
+                           glm::vec3(0.0f, 0.0f, -2.0f));
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE,
                            glm::value_ptr(three_d->model));
         three_d->set_projection(fov);
         glUniformMatrix4fv(projectionLoc, 1, GL_FALSE,
                            glm::value_ptr(three_d->projection));
-        // bind textures on corresponding texture units
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, texture1);
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, texture2);
-
         glBindVertexArray(VAO);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
 
-        glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+        // lightingShader.use();
+        // int lightModelLoc = glGetUniformLocation(lightingShader.ID, "model");
+        // int lightViewLoc = glGetUniformLocation(lightingShader.ID, "view");
+        // int lightProjectionLoc = glGetUniformLocation(lightingShader.ID, "projection");
+        // glUniformMatrix4fv(lightViewLoc, 1, GL_FALSE, glm::value_ptr(view));
+        // lightSource_3d->set_model(20, glm::vec3(0.0f, 1.0f, 0.0f),
+        //                    glm::vec3(1.2f, 1.0f, 2.0f));
+        // glUniformMatrix4fv(lightModelLoc, 1, GL_FALSE,
+        //                    glm::value_ptr(lightSource_3d->model));
+        //
+        // lightSource_3d->set_projection(fov);
+        // glUniformMatrix4fv(lightProjectionLoc, 1, GL_FALSE,
+        //                    glm::value_ptr(lightSource_3d->projection));
+        // glBindVertexArray(lightVAO);
+        // glDrawArrays(GL_TRIANGLES, 0, 36);
         glfwSwapBuffers(window); // concept of double buffers (section: 4.3)
         glfwPollEvents();
     }
