@@ -12,13 +12,13 @@
 #include "../include/3d.h"
 #include "../include/stb_image.h"
 #include <vector>
-
-glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 6.0f);
+//camera
+glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
 glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
 glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 bool firstMouse = true;
-float yaw = -90.0f;
-float pitch = 0.0f;
+float yaw = -90.0f; //rotating about y-axis or angle made with x axis in xz-plane
+float pitch = 0.0f; //rotationg about x-axis
 float lastX = 800.0f / 2.0;
 float lastY = 600.0 / 2.0;
 float fov = 45.0f;
@@ -137,21 +137,31 @@ int main()
         0.5f,  0.5f,  0.5f,  -0.5f, 0.5f,  0.5f,  -0.5f, 0.5f,  -0.5f,
     };
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    //mouse input callbacks 
+    // comment them if want to disable cursor input
+    glfwSetCursorPosCallback(window, mouse_callback);
+    glfwSetScrollCallback(window, scroll_callback);
     glEnable(GL_DEPTH_TEST);
     // VERTEX ARRAY OBJECT
     unsigned int VAO;
     glGenVertexArrays(1, &VAO);
-    glBindVertexArray(VAO);
-
-
     // VERTEX BUFFER OBJECT
     unsigned int VBO;
     glGenBuffers(1, &VBO);
-    // 0. copy our vertices array in a buffer for OpenGl to use
+    glBindVertexArray(VAO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(square_vertices), square_vertices,
                  GL_STATIC_DRAW);
 
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float),
+                          (void*)0);
+    glEnableVertexAttribArray(0);
+
+    unsigned int lightCubeVAO;
+    glGenVertexArrays(1, &lightCubeVAO);
+    glBindVertexArray(lightCubeVAO);
+
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
     // LINKING VERTEX ATTRIBUTES
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float),
                           (void*)0);
@@ -159,11 +169,20 @@ int main()
 
     // initialize shaders
     Shader ourShader("shaders/vshader.vs", "shaders/fshader.fs");
+    Shader lightCubeShader("shaders/lightSource_vshader.vs",
+                           "shaders/lightSource_fshader.fs");
 
-    Three_d* three_d = new Three_d(glfwGetTime()*20.0f, glm::vec3(0.0f, 0.0f, 1.0f),
-                                   glm::vec3(0.0f, 0.0f, -0.1f));
+    Three_d* three_d =
+        new Three_d(glfwGetTime() * 20.0f, glm::vec3(0.0f, 0.0f, 1.0f),
+                    glm::vec3(0.0f, 0.0f, -0.1f));
+    float theta = 0.0;
+    float dtheta = 0.5f; 
     while (!glfwWindowShouldClose(window))
     {
+        if (theta > 360){
+            theta = 0;
+        }
+        theta += dtheta;
         // input
         processInput(window);
         // rendering
@@ -191,8 +210,8 @@ int main()
 
         // setting model uniform
         int modelLoc = glGetUniformLocation(ourShader.ID, "model");
-        three_d->set_model(20, glm::vec3(0.0f, 0.0f, 0.0f),
-                           glm::vec3(1.0f, 1.0f, -0.8f));
+        three_d->set_model(glfwGetTime()*40, glm::vec3(0.0f, 1.0f, 0.0f),
+                           glm::vec3(0.0f, 0.0f, -1.8f));
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE,
                            glm::value_ptr(three_d->model));
 
@@ -200,11 +219,21 @@ int main()
         glBindVertexArray(VAO);
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
+        three_d->set_model(glfwGetTime()*20, glm::vec3(0.0f, 1.0f, 0.0f),
+                           glm::vec3(2.8f * cos(theta * (M_PI/180)), 0.0f, 2.8f *sin(theta*(M_PI/180))));
+        lightCubeShader.use();
+        lightCubeShader.setMat4("projection", three_d->projection);
+        lightCubeShader.setMat4("view", view);
+        glm::mat4 model = glm::scale(three_d->model, glm::vec3(0.2f)); // a smaller cube
+        lightCubeShader.setMat4("model", model);
+        glBindVertexArray(lightCubeVAO);
+        glDrawArrays(GL_TRIANGLES, 0,36);
+
         glfwSwapBuffers(window); // concept of double buffers (section: 4.3)
         glfwPollEvents();
     }
-    // glDeleteVertexArrays(1, &VAO);
-    // glDeleteBuffers(1, &VBO);
+    glDeleteVertexArrays(1, &VAO);
+    glDeleteBuffers(1, &VBO);
     glfwTerminate();
     return 0;
 }
