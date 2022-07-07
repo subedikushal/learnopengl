@@ -6,12 +6,17 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_opengl3.h>
 #include <iostream>
 #include <math.h>
 #define STB_IMAGE_IMPLEMENTATION
 #include "../include/3d.h"
 #include "../include/stb_image.h"
 #include <vector>
+
+const char* glsl_version = "#version 130";
 // camera
 glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 5.0f);
 glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
@@ -24,95 +29,29 @@ float lastX = 800.0f / 2.0;
 float lastY = 600.0 / 2.0;
 float fov = 45.0f;
 float zoom = 0.0f;
-// sphere
-int sectorCount{36}, stackCount{18};
-std::vector<float> gen_sphere_vertices()
-{
-    std::vector<float> vertices;
-    float x, y, z, xy, radius{1.0f}; // vertex position
-    float s, t;                      // vertex texCoord
-    float sectorStep = 2 * M_PI / sectorCount;
-    float stackStep = M_PI / stackCount;
-    float sectorAngle, stackAngle;
-    for (int i = 0; i <= stackCount; ++i)
-    {
-        stackAngle = M_PI / 2 - i * stackStep; // starting from pi/2 to -pi/2
-        xy = radius * cosf(stackAngle);        // r * cos(u)
-        z = radius * sinf(stackAngle);         // r * sin(u)
-        // add (sectorCount+1) vertices per stack
-        // the first and last vertices have same position and normal, but
-        // different tex coords
-        for (int j = 0; j <= sectorCount; ++j)
-        {
-            sectorAngle = j * sectorStep; // starting from 0 to 2pi
-            // vertex position (x, y, z)
-            x = xy * cosf(sectorAngle); // r * cos(u) * cos(v)
-            y = xy * sinf(sectorAngle); // r * cos(u) * sin(v)
-            vertices.push_back(x);
-            vertices.push_back(y);
-            vertices.push_back(z);
-            s = (float)j / sectorCount;
-            t = (float)i / stackCount;
-            vertices.push_back(s);
-            vertices.push_back(t);
-        }
-    }
-    return vertices;
-}
-std::vector<unsigned int> gen_sphere_indices()
-{
-    std::vector<unsigned int> indices;
-    int k1, k2;
-    for (int i = 0; i < stackCount; ++i)
-    {
-        k1 = i * (sectorCount + 1); // beginning of current stack
-        k2 = k1 + sectorCount + 1;  // beginning of next stack
 
-        for (int j = 0; j < sectorCount; ++j, ++k1, ++k2)
-        {
-            // 2 triangles per sector excluding first and last stacks
-            // k1 => k2 => k1+1
-            if (i != 0)
-            {
-                indices.push_back(k1);
-                indices.push_back(k2);
-                indices.push_back(k1 + 1);
-            }
-
-            // k1+1 => k2 => k2+1
-            if (i != (stackCount - 1))
-            {
-                indices.push_back(k1 + 1);
-                indices.push_back(k2);
-                indices.push_back(k2 + 1);
-            }
-        }
-    }
-    return indices;
-}
 // function prototypes
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void gen_texture(unsigned int* texture, const char* path, const char* type);
 void processInput(GLFWwindow* window);
-int main()
-{
+
+/***************MAIN**********************/
+int main() {
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     GLFWwindow* window = glfwCreateWindow(800, 600, "LearnOpenGL", NULL, NULL);
-    if (window == NULL)
-    {
+    if (window == NULL) {
         std::cout << "Failed to create GLFW window" << std::endl;
         glfwTerminate();
         return -1;
     }
     glfwMakeContextCurrent(window);
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-    {
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
         std::cout << "Failed to initialize GLAD" << std::endl;
         return -1;
     }
@@ -147,30 +86,13 @@ int main()
         -0.5f, 0.0f,  1.0f,  0.0f,  1.0f,  1.0f,  0.5f,  0.5f,  0.5f,  0.0f,
         1.0f,  0.0f,  1.0f,  0.0f,  0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
         1.0f,  0.0f,  -0.5f, 0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  0.0f,
-        -0.5f, 0.5f,  -0.5f, 0.0f,  1.0f,  0.0f,  0.0f,  1.0f
-        // -0.5f, -0.5f, -0.5f, 0.5f,  -0.5f, -0.5f, 0.5f,  0.5f,  -0.5f,
-        // 0.5f,  0.5f,  -0.5f, -0.5f, 0.5f,  -0.5f, -0.5f, -0.5f, -0.5f,
-        //
-        // -0.5f, -0.5f, 0.5f,  0.5f,  -0.5f, 0.5f,  0.5f,  0.5f,  0.5f,
-        // 0.5f,  0.5f,  0.5f,  -0.5f, 0.5f,  0.5f,  -0.5f, -0.5f, 0.5f,
-        //
-        // -0.5f, 0.5f,  0.5f,  -0.5f, 0.5f,  -0.5f, -0.5f, -0.5f, -0.5f,
-        // -0.5f, -0.5f, -0.5f, -0.5f, -0.5f, 0.5f,  -0.5f, 0.5f,  0.5f,
-        //
-        // 0.5f,  0.5f,  0.5f,  0.5f,  0.5f,  -0.5f, 0.5f,  -0.5f, -0.5f,
-        // 0.5f,  -0.5f, -0.5f, 0.5f,  -0.5f, 0.5f,  0.5f,  0.5f,  0.5f,
-        //
-        // -0.5f, -0.5f, -0.5f, 0.5f,  -0.5f, -0.5f, 0.5f,  -0.5f, 0.5f,
-        // 0.5f,  -0.5f, 0.5f,  -0.5f, -0.5f, 0.5f,  -0.5f, -0.5f, -0.5f,
-        //
-        // -0.5f, 0.5f,  -0.5f, 0.5f,  0.5f,  -0.5f, 0.5f,  0.5f,  0.5f,
-        // 0.5f,  0.5f,  0.5f,  -0.5f, 0.5f,  0.5f,  -0.5f, 0.5f,  -0.5f,
-    };
+        -0.5f, 0.5f,  -0.5f, 0.0f,  1.0f,  0.0f,  0.0f,  1.0f};
+
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     // mouse input callbacks
     //  comment them if want to disable cursor input
-    glfwSetCursorPosCallback(window, mouse_callback);
-    glfwSetScrollCallback(window, scroll_callback);
+    // glfwSetCursorPosCallback(window, mouse_callback);
+    // glfwSetScrollCallback(window, scroll_callback);
     glEnable(GL_DEPTH_TEST);
     // VERTEX ARRAY OBJECT
     unsigned int VAO;
@@ -210,23 +132,99 @@ int main()
                     glm::vec3(0.0f, 0.0f, -0.1f));
     float theta = 0.0;
     float dtheta = 0.5f;
-    while (!glfwWindowShouldClose(window))
-    {
-        if (theta > 360)
-        {
+
+    // Initialize ImGUI
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO();
+    (void)io;
+    ImGui::StyleColorsDark();
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init(glsl_version);
+
+    // our state
+    bool show_demo_window = true;
+    bool show_another_window = false;
+    ImVec4 clear_color = ImVec4(0.4f, 0.55f, 0.60f, 1.00f);
+
+    while (!glfwWindowShouldClose(window)) {
+        if (theta > 360) {
             theta = 0;
         }
         theta += dtheta;
+
         // input
         processInput(window);
-        // rendering
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        // imgui
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+        // 1. Show the big demo window (Most of the sample code is in
+        // ImGui::ShowDemoWindow()! You can browse its code to learn more about
+        // Dear ImGui!).
+        // if (show_demo_window)
+        //     ImGui::ShowDemoWindow(&show_demo_window);
+
+        // 2. Show a simple window that we create ourselves. We use a Begin/End
+        // pair to created a named window.
+        static float f = 0.0f;
+        static float angle = 0.0f;
+        static int counter = 0;
+
+        ImGui::Begin("Tweaker"); // Create a window called "Hello,
+                                       // world!" and append into it.
+
+                                                  // use a format strings too)
+        ImGui::Checkbox("Demo Window",
+                        &show_demo_window); // Edit bools storing our window
+                                            // open/close state
+
+        ImGui::SliderFloat(
+            "float", &f, 0.0f,
+            2.8f); // Edit 1 float using a slider from 0.0f to 1.0f
+        ImGui::SliderFloat(
+            "angle", &angle, 0.0f,
+            360.0f); // Edit 1 float using a slider from 0.0f to 1.0f
+        ImGui::ColorEdit3(
+            "clear color",
+            (float*)&clear_color); // Edit 3 floats representing a color
+
+        if (ImGui::Button(
+                "Button")) // Buttons return true when clicked (most widgets
+                           // return true when edited/activated)
+            counter++;
+        ImGui::SameLine();
+        ImGui::Text("counter = %d", counter);
+
+        ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
+                    1000.0f / ImGui::GetIO().Framerate,
+                    ImGui::GetIO().Framerate);
+        ImGui::End();
+
+        // 3. Show another simple window.
+        if (show_another_window) {
+            ImGui::Begin(
+                "Another Window",
+                &show_another_window); // Pass a pointer to our bool variable
+                                       // (the window will have a closing button
+                                       // that will clear the bool when clicked)
+            ImGui::Text("Hello from another window!");
+            if (ImGui::Button("Close Me"))
+                show_another_window = false;
+            ImGui::End();
+        }
+
+        // Rendering
+        ImGui::Render();
+        // rendering
+        glClearColor(0.4f, 0.5f, 0.8f,
+                     1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         // activate shader
         ourShader.use();
 
-        ourShader.setVec3("objectColor", 1.0f, 0.5f, 0.31f);
+        ourShader.setVec3("objectColor", clear_color.x, clear_color.y, clear_color.z);
         ourShader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
         // transformations
         // setting projection uniform
@@ -244,7 +242,7 @@ int main()
 
         // setting model uniform
         int modelLoc = glGetUniformLocation(ourShader.ID, "model");
-        three_d->set_model(glfwGetTime() * 40, glm::vec3(0.0f, 1.0f, 0.0f),
+        three_d->set_model(glfwGetTime() * angle, glm::vec3(0.0f, 1.0f, 0.0f),
                            glm::vec3(0.0f, 0.0f, -1.8f));
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE,
                            glm::value_ptr(three_d->model));
@@ -253,9 +251,9 @@ int main()
         glBindVertexArray(VAO);
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
-        float lightPosX = 2.8f * cos(theta * (M_PI / 180));
+        float lightPosX = f * cos(theta * (M_PI / 180));
         float lightPosY = 0.0f;
-        float lightPosZ = 2.8f * sin(theta * (M_PI / 180));
+        float lightPosZ = f * sin(theta * (M_PI / 180));
 
         ourShader.setVec3("lightPos", lightPosX, lightPosY, lightPosZ);
         three_d->set_model(glfwGetTime() * 40, glm::vec3(0.0f, 1.0f, 0.0f),
@@ -272,18 +270,20 @@ int main()
         glfwSwapBuffers(window); // concept of double buffers (section: 4.3)
         glfwPollEvents();
     }
+    // Cleanup
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
     glfwTerminate();
     return 0;
 }
 
-void framebuffer_size_callback(GLFWwindow* window, int width, int height)
-{
+void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
 }
-void processInput(GLFWwindow* window)
-{
+void processInput(GLFWwindow* window) {
     const float cameraSpeed = 0.05f;
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
         cameraPos += cameraSpeed * cameraFront;
@@ -302,8 +302,7 @@ void processInput(GLFWwindow* window)
         // 'GLFW_PRESS'
         glfwSetWindowShouldClose(window, true);
 }
-void gen_texture(unsigned int* texture, const char* path, const char* type)
-{
+void gen_texture(unsigned int* texture, const char* path, const char* type) {
     glGenTextures(1, texture);
     glBindTexture(GL_TEXTURE_2D, *texture);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -313,32 +312,24 @@ void gen_texture(unsigned int* texture, const char* path, const char* type)
     // load and generate the texture
     int width, height, nrChannels;
     unsigned char* data = stbi_load(path, &width, &height, &nrChannels, 0);
-    if (data)
-    {
-        if (strcmp(type, "png") == 0)
-        {
+    if (data) {
+        if (strcmp(type, "png") == 0) {
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA,
                          GL_UNSIGNED_BYTE, data);
-        }
-        else
-        {
+        } else {
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB,
                          GL_UNSIGNED_BYTE, data);
         }
         glGenerateMipmap(GL_TEXTURE_2D);
         std::cout << "texture loaded" << std::endl;
-    }
-    else
-    {
+    } else {
         std::cout << "failed to load texture" << std::endl;
     }
     stbi_image_free(data);
 }
 
-void mouse_callback(GLFWwindow* window, double xpos, double ypos)
-{
-    if (firstMouse)
-    {
+void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
+    if (firstMouse) {
         lastX = xpos;
         lastY = ypos;
         firstMouse = false;
@@ -362,8 +353,7 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
     direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
     cameraFront = glm::normalize(direction);
 }
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
-{
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
     fov -= (float)yoffset;
     if (fov < 1.0f)
         fov = 1.0f;
