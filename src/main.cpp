@@ -210,11 +210,16 @@ int main()
                     glm::vec3(0.0f, 0.0f, -0.1f));
     float theta = 0.0;
     float dtheta = 0.5f;
+    int c = 0;
     while (!glfwWindowShouldClose(window))
     {
         if (theta > 360)
         {
             theta = 0;
+        }
+        if (theta >= 180)
+        {
+            c = 3;
         }
         theta += dtheta;
         // input
@@ -226,8 +231,16 @@ int main()
         // activate shader
         ourShader.use();
 
-        ourShader.setVec3("objectColor", 1.0f, 0.5f, 0.31f);
-        ourShader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
+        // ourShader.setVec3("objectColor", 1.0f, 0.5f, 0.31f);
+        // ourShader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
+        ourShader.setVec3("viewPos", cameraPos);
+        ourShader.setVec3("material.ambient", 1.0f, 0.5f, 0.31f);
+        ourShader.setVec3("material.diffuse", 1.0f, 0.5f, 0.31f);
+        ourShader.setVec3("material.specular", 0.5f, 0.5f, 0.5f);
+        ourShader.setFloat("material.shininess", 32.0f);
+        ourShader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
+        ourShader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f); // darkened
+        ourShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
         // transformations
         // setting projection uniform
         int projectionLoc = glGetUniformLocation(ourShader.ID, "projection");
@@ -253,13 +266,15 @@ int main()
         glBindVertexArray(VAO);
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
-        float lightPosX = 2.8f * cos(theta * (M_PI / 180));
+        float lightPosX = 1.8f * cos(theta * (M_PI / 180));
         float lightPosY = 0.0f;
-        float lightPosZ = 2.8f * sin(theta * (M_PI / 180));
+        float lightPosZ = (3.8+c)  * sin(theta * (M_PI / 180));
 
-        ourShader.setVec3("lightPos", lightPosX, lightPosY, lightPosZ);
+        ourShader.setVec3("light.position", lightPosX, lightPosY, lightPosZ);
         three_d->set_model(glfwGetTime() * 40, glm::vec3(0.0f, 1.0f, 0.0f),
                            glm::vec3(lightPosX, lightPosY, lightPosZ));
+        // three_d->set_model(glfwGetTime() * 40, glm::vec3(0.0f, 1.0f, 0.0f),
+        //                    glm::vec3(1.8, 0.0, -1.8f));
         lightCubeShader.use();
         lightCubeShader.setMat4("projection", three_d->projection);
         lightCubeShader.setMat4("view", view);
